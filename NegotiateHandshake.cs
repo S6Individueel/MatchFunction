@@ -13,20 +13,16 @@ namespace MatchFunction
 {
     public static class NegotiateHandshake
     {
-        ///<summary>
-        /// Uses the following link to gain more access to user info.
-        ///https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-signalr-service-input?tabs=csharp
-        /// </summary>
 
-        [FunctionName("negotiate")]
-        public static SignalRConnectionInfo Negotiate(
-            [HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest req,
-            [SignalRConnectionInfo(HubName = "MatchingHub", UserId = "{headers.x-ms-client-principal-id}")] 
-            SignalRConnectionInfo connectionInfo)
+        [FunctionName("Negotiate")]
+        public static SignalRConnectionInfo Run(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "negotiate")] HttpRequest req,
+        [SignalRConnectionInfo(HubName = "matchingHub", UserId = "some-string")] SignalRConnectionInfo connectionInfo,
+        ILogger log)
         {
             return connectionInfo;
         }
 
-        
+
     }
 }
