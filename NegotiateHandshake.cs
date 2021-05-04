@@ -17,8 +17,8 @@ namespace MatchFunction
         [FunctionName("Negotiate")]
         public static SignalRConnectionInfo Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "negotiate")] HttpRequest req,
-        [SignalRConnectionInfo(HubName = "matchingHub", UserId = "some-string")] SignalRConnectionInfo connectionInfo,
-        ILogger log)
+        [SignalRConnectionInfo(HubName = "chat", UserId = "{headers.x-ms-signalr-userid}")] SignalRConnectionInfo connectionInfo, 
+        ILogger log)//Headers will be passed from the client as userID which allows everyone to add themselves to a group
         {
             return connectionInfo;
         }

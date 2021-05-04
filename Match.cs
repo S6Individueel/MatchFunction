@@ -17,16 +17,32 @@ namespace MatchFunction
     {
         private static HttpClient httpClient = new HttpClient();
 
-
-        /// <summary>
-        /// Routes the user based on the input given to be added to a group using a userId. 
-        /// </summary>
-        /// <param name="req"></param>
-        /// <param name="group"></param>
-        /// <param name="userId"></param>
-        /// <param name="signalRGroupActions"></param>
-        /// <returns></returns>
-        [FunctionName("AddToGroup")] //TODO: Possibly replace the userID to join with a connectionID for more individuality
+    [FunctionName("AddToGroupGrimly")]
+    public static Task AddToGroupGrimly(
+    [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
+    string group,
+    ClaimsPrincipal claimsPrincipal,
+    [SignalR(HubName = "chat")]
+        IAsyncCollector<SignalRGroupAction> signalRGroupActions)
+    {
+        var userIdClaim = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier);
+        return signalRGroupActions.AddAsync(
+            new SignalRGroupAction
+            {
+                UserId = userIdClaim.Value,
+                GroupName = group,
+                Action = GroupAction.Add
+            });
+    }
+    /// <summary>
+    /// Routes the user based on the input given to be added to a group using a userId. 
+    /// </summary>
+    /// <param name="req"></param>
+    /// <param name="group"></param>
+    /// <param name="userId"></param>
+    /// <param name="signalRGroupActions"></param>
+    /// <returns></returns>
+    [FunctionName("AddToGroup")] //TODO: Possibly replace the userID to join with a connectionID for more individuality
         public static Task AddToGroup(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "{group}/add/{userId}")] HttpRequest req,
         string group,
