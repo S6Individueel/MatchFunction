@@ -15,25 +15,7 @@ namespace MatchFunction
 {
     public class Match 
     {
-        private static HttpClient httpClient = new HttpClient();
 
-    [FunctionName("AddToGroupGrimly")]
-    public static Task AddToGroupGrimly(
-    [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
-    string group,
-    ClaimsPrincipal claimsPrincipal,
-    [SignalR(HubName = "chat")]
-        IAsyncCollector<SignalRGroupAction> signalRGroupActions)
-    {
-        var userIdClaim = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier);
-        return signalRGroupActions.AddAsync(
-            new SignalRGroupAction
-            {
-                UserId = userIdClaim.Value,
-                GroupName = group,
-                Action = GroupAction.Add
-            });
-    }
     /// <summary>
     /// Routes the user based on the input given to be added to a group using a userId. 
     /// </summary>
@@ -80,26 +62,6 @@ namespace MatchFunction
                     GroupName = group,
                     Target = group,
                     Arguments = new[] { rndQuote }
-                });
-        }
-
-        [FunctionName("SendQuote")]
-        public static async Task SendQuote(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            [SignalR(HubName = "matchingHub")] IAsyncCollector<SignalRMessage> signalRMessage,
-            ILogger log)
-        {
-
-            var response = await httpClient.GetAsync("https://stoicquotesapi.com/v1/api/quotes/random");
-            string responseBody = await response.Content.ReadAsStringAsync();
-            Quote incomingQuote = JsonConvert.DeserializeObject<Quote>(responseBody);
-            incomingQuote.body = await req.ReadAsStringAsync();
-
-            await signalRMessage.AddAsync(
-                new SignalRMessage
-                {
-                    Target = "incomingQuote", //Should be the same in the client when you define receiving method name
-                    Arguments = new[] { incomingQuote }
                 });
         }
     }
