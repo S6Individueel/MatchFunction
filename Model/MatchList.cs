@@ -7,6 +7,6 @@ namespace MatchFunction.Model
     class MatchList
     {
         public string User { get; set; }
-        public List<string> MatchResults { get; set; }
+        public string MatchResults { get; set; }
     }
 }
