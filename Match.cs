@@ -87,20 +87,21 @@ namespace MatchFunction
 
         [FunctionName("SendMessageToGroup")]
         public static Task SendMessageToGroup(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "{group}/send")] object message,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "{group}/{userid}/send")] object message,
         string group,
+        string userid,
         [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
         {
-            Quote rndQuote = new Quote();
-            rndQuote.body = message.ToString();
-            rndQuote.author = "New Group Message";
+            ChatMessage chatMessage = new ChatMessage();
+            chatMessage.Content = message.ToString();
+            chatMessage.UserName = userid;
 
             return signalRMessages.AddAsync(
                 new SignalRMessage
                 {
                     GroupName = group,
                     Target = group,
-                    Arguments = new[] { rndQuote }
+                    Arguments = new[] { chatMessage }
                 });
         }
 
