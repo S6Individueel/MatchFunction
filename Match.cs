@@ -42,21 +42,30 @@ namespace MatchFunction
                     Action = GroupAction.Add
                 });
         }
-        [FunctionName("AddToGroupGrimly")]
-        public static Task AddToGroupGrimly(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
-        ClaimsPrincipal claimsPrincipal,
-        [SignalR(HubName = "chat")]
-        IAsyncCollector<SignalRGroupAction> signalRGroupActions)
+
+        [FunctionName("HostGroup")]
+        public static Task HostGroup(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "host/{userId}")] HttpRequest req,
+        string userId,
+        [SignalR(HubName = "chat")] IAsyncCollector<SignalRGroupAction> signalRGroupActions,
+        [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
         {
-            var userIdClaim = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier);
-            return signalRGroupActions.AddAsync(
+            string groupCode = IdGenerator.GetBase36(6);
+            signalRGroupActions.AddAsync( //Simply adds the user to the group, but doesn't return the request yet
                 new SignalRGroupAction
                 {
-                    UserId = userIdClaim.Value,
-                    GroupName = "groupName",
+                    UserId = userId,
+                    GroupName = groupCode,
                     Action = GroupAction.Add
                 });
+
+            return signalRMessages.AddAsync( //Return the message with the code and user in order for quick initialization client side, also reduces roundtrip by 1
+            new SignalRMessage
+            {
+                GroupName = groupCode,
+                Target = "incomingHost",
+                Arguments = new[] { groupCode }
+            });
         }
         /*        [FunctionName("addToGroupGrimly")] //Altered from Grimly src=https://github.com/MicrosoftDocs/azure-docs/issues/34409
                 public static async Task<Task> AddToGroupGrimly(
@@ -116,37 +125,6 @@ namespace MatchFunction
                 });
         }
 
-        [FunctionName("messages")]
-        public static Task SendMessage(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] object message,
-            [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
-        {
-            return signalRMessages.AddAsync(
-                new SignalRMessage
-                {
-                    Target = "newMessage",
-                    Arguments = new[] { message }
-                });
-        }
-        [FunctionName("SendQuote")]
-        public static async Task SendQuote(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessage,
-            ILogger log)
-        {
-
-            var response = await httpClient.GetAsync("https://stoicquotesapi.com/v1/api/quotes/random");
-            string responseBody = await response.Content.ReadAsStringAsync();
-            Quote incomingQuote = JsonConvert.DeserializeObject<Quote>(responseBody);
-            incomingQuote.body = await req.ReadAsStringAsync();
-
-            await signalRMessage.AddAsync(
-                new SignalRMessage
-                {
-                    Target = "incomingQuote", //Should be the same in the client when you define receiving method name
-                    Arguments = new[] { incomingQuote }
-                });
-        }
     }
 }
 
