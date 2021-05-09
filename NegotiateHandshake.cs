@@ -1,4 +1,4 @@
-using System;
+/*using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -13,20 +13,17 @@ namespace MatchFunction
 {
     public static class NegotiateHandshake
     {
-        ///<summary>
-        /// Uses the following link to gain more access to user info.
-        ///https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-signalr-service-input?tabs=csharp
-        /// </summary>
 
-        [FunctionName("negotiate")]
-        public static SignalRConnectionInfo Negotiate(
-            [HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest req,
-            [SignalRConnectionInfo(HubName = "MatchingHub", UserId = "{headers.x-ms-client-principal-id}")] 
-            SignalRConnectionInfo connectionInfo)
+        [FunctionName("Negotiate")]
+        public static SignalRConnectionInfo Run(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "negotiate")] HttpRequest req,
+        [SignalRConnectionInfo(HubName = "chat", UserId = "{headers.x-ms-signalr-userid}")] SignalRConnectionInfo connectionInfo, 
+        ILogger log)//Headers will be passed from the client as userID which allows everyone to add themselves to a group
         {
             return connectionInfo;
         }
 
-        
+
     }
 }
+*/

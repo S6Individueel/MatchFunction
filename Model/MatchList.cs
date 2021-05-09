@@ -6,7 +6,7 @@ namespace MatchFunction.Model
 {
     class MatchList
     {
-        public string Title { get; set; }
-        public string ImagePath { get; set; }
+        public string User { get; set; }
+        public string MatchResults { get; set; }
     }
 }

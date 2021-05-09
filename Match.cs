@@ -11,146 +11,182 @@ using System.Net.Http;
 using MatchFunction.Model;
 using Microsoft.Azure.WebJobs.Extensions.SignalRService;
 using System.Security.Claims;
+using System.Collections.Generic;
+
 namespace MatchFunction
 {
-    public static class Match
+    public class Match 
     {
+
         private static HttpClient httpClient = new HttpClient();
-
-
-        [FunctionName("SendQuote")]
-        public static async Task SendQuote(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            [SignalR(HubName = "MatchingHub")] IAsyncCollector<SignalRMessage> signalRMessage,
-            ILogger log)
+        private static Random rnd = new Random();
+        private static readonly string[] sentences = new string[] { "momentarily", "bloodthirstily", "unnecessarily", "trustworthily", "involuntarily", "secondarily", "mandatorily", "temporarily", "arbitrarily", "voluntarily", "ordinarily", "stealthily", "unsanitarily", "worthily", "unworthily", "sanitarily", "squekily", "hungrily", "cheekily" };
+        [FunctionName("Negotiate")]
+        public static SignalRConnectionInfo Run(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "negotiate")] HttpRequest req,
+        [SignalRConnectionInfo(HubName = "chat", UserId = "{headers.x-ms-signalr-userid}")] SignalRConnectionInfo connectionInfo, //For some reason admin needs to be userID in order to add groups
+        ILogger log)
         {
-            
-            var response = await httpClient.GetAsync("https://stoicquotesapi.com/v1/api/quotes/random");
-            string responseBody = await response.Content.ReadAsStringAsync();
-            Quote incomingQuote = JsonConvert.DeserializeObject<Quote>(responseBody);
-            incomingQuote.body = await req.ReadAsStringAsync();
-
-            await signalRMessage.AddAsync(
-                new SignalRMessage
-                    {
-                        Target = "incomingQuote", //Should be the same in the client when you define receiving method name
-                        Arguments = new[] { incomingQuote }
-                    });
+            return connectionInfo;
         }
 
-        [FunctionName("Testing")]
-        public static async Task Testing(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-        [SignalR(HubName = "MatchingHub")] IAsyncCollector<SignalRMessage> signalRMessage,
-        SignalRConnectionInfo connectionInfo, ILogger log)
+        [FunctionName("AddToGroup")]
+        public static Task AddToGroup(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "{group}/add/{userId}")] HttpRequest req,
+        string group,
+        string userId,
+        [SignalR(HubName = "chat")] IAsyncCollector<SignalRGroupAction> signalRGroupActions)
         {
-            string hub = "testing";
-            string group = "newGroup";
-            string connectionId = connectionInfo.Url;
-            var response = await httpClient.GetAsync($"matchflixchat.service.signalr.net/api/v1/hubs/{hub}/groups/{group}/connections/{connectionId}");
 
-            string responseBody = await response.Content.ReadAsStringAsync();
-            Quote incomingQuote = JsonConvert.DeserializeObject<Quote>(responseBody);
-            incomingQuote.body = await req.ReadAsStringAsync();
 
-            await signalRMessage.AddAsync(
-                new SignalRMessage
-                {
-                    Target = "incomingQuote", //Should be the same in the client when you define receiving method name
-                    Arguments = new[] { incomingQuote }
-                });
-        }
-
-        /*        [FunctionName("test")]
-                public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestMessage req, ILogger log)
-                {
-                    var payload = new PayloadMessage()
-                    {
-                        Target = methodName,
-                        Arguments = args
-                    };
-                    var url = $"{endpoint}/api/v1/hubs/{hubName}";
-                    var bearer = GenerateJwtBearer(null, url, null, DateTime.UtcNow.AddMinutes(30), accessKey);
-                    await PostJsonAsync(url, payload, bearer);
-
-                    await signalR.SendAsync("signinsamplehub", "updateSignInStats", stats.TotalNumber, stats.ByOS, stats.ByBrowser);
-                }
-                public async Task SendAsync(string hubName, string methodName, params object[] args)
-                {
-                    var payload = new PayloadMessage()
-                    {
-                        Target = methodName,
-                        Arguments = args
-                    };
-                    var url = $"{endpoint}/api/v1/hubs/{hubName}";
-                    var bearer = GenerateJwtBearer(null, url, null, DateTime.UtcNow.AddMinutes(30), accessKey);
-                    await PostJsonAsync(url, payload, bearer);
-
-                    //---
-                    var request = new HttpRequestMessage
-                    {
-                        Method = HttpMethod.Post,
-                        RequestUri = new Uri(url)
-                    };
-                    var content = JsonConvert.SerializeObject(payload);
-                    request.Content = new StringContent(content, Encoding.UTF8, "application/json");
-                    return httpClient.SendAsync(request);
-                }*/
-        /*        private Task<HttpResponseMessage> PostJsonAsync(string url, object body, string bearer)
-                {
-                    var request = new HttpRequestMessage
-                    {
-                        Method = HttpMethod.Post,
-                        RequestUri = new Uri(url)
-                    };
-
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
-                    request.Headers.Accept.Clear();
-                    request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    request.Headers.AcceptCharset.Clear();
-                    request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("UTF-8"));
-
-                    var content = JsonConvert.SerializeObject(body);
-                    request.Content = new StringContent(content, Encoding.UTF8, "application/json");
-                    return httpClient.SendAsync(request);
-                }*/
-
-        [FunctionName("addToGroup")]
-        public static async Task<Task> AddToGroup(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
-        ClaimsPrincipal claimsPrincipal,
-        [SignalR(HubName = "MatchingHub")]
-        IAsyncCollector<SignalRGroupAction> signalRGroupActions)
-        {
-            string friendCode = "";
-            if (req.Body != null)
-            {
-                friendCode = await req.ReadAsStringAsync();
-            }
-
-            var userIdClaim = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier);
             return signalRGroupActions.AddAsync(
                 new SignalRGroupAction
                 {
-                    UserId = userIdClaim.Value,
-                    GroupName = friendCode ?? "myGroup",
+                    UserId = userId,
+                    GroupName = group,
                     Action = GroupAction.Add
                 });
         }
 
-        [FunctionName("SendMessage")]
-        public static Task SendMessage(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post")] object message,
-        [SignalR(HubName = "MatchingHub")] IAsyncCollector<SignalRMessage> signalRMessages)
+        [FunctionName("HostGroup")]
+        public static async Task<Task> HostGroup(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "host/{userId}")] HttpRequest req,
+        string userId,
+        [SignalR(HubName = "chat")] IAsyncCollector<SignalRGroupAction> signalRGroupActions,
+        [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
         {
+            string groupCode = await IdGenerator.GetBase36(6);
+            await signalRGroupActions.AddAsync( //Simply adds the user to the group, but doesn't return the request yet
+                new SignalRGroupAction
+                {
+                    UserId = userId,
+                    GroupName = groupCode,
+                    Action = GroupAction.Add
+                }); 
+
+            return signalRMessages.AddAsync( //Return the message with the code and user in order for quick initialization client side, also reduces roundtrip by 1
+            new SignalRMessage
+            {
+                GroupName = groupCode,
+                Target = "incomingHost",
+                Arguments = new[] { groupCode }
+            });
+        }
+        /*        [FunctionName("addToGroupGrimly")] //Altered from Grimly src=https://github.com/MicrosoftDocs/azure-docs/issues/34409
+                public static async Task<Task> AddToGroupGrimly(
+                [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
+                ClaimsPrincipal claimsPrincipal,
+                [SignalR(HubName = "chat")]
+                        IAsyncCollector<SignalRGroupAction> signalRGroupActions)
+                {
+                    var userIdClaim = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier);
+                    //string groupName = await req.ReadAsStringAsync();
+                    return signalRGroupActions.AddAsync(
+                        new SignalRGroupAction
+                        {
+                            UserId = userIdClaim.Value,
+                            GroupName = "myGroup",
+                            Action = GroupAction.Add
+                        });
+                }*/
+
+        [FunctionName("SendMessageToGroup")]
+        public static Task SendMessageToGroup(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "{group}/{userid}/send")] object message,
+        string group,
+        string userid,
+        [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
+        {
+            ChatMessage chatMessage = new ChatMessage();
+            chatMessage.Content = message.ToString();
+            chatMessage.UserName = userid;
+
             return signalRMessages.AddAsync(
                 new SignalRMessage
                 {
-            // the message will be sent to the group with this name
-            GroupName = "myGroup",
-                    Target = "newMessage",
-                    Arguments = new[] { message }
+                    GroupName = group,
+                    Target = group,
+                    Arguments = new[] { chatMessage }
                 });
         }
+
+        [FunctionName("SendUpdateToGroup")]
+        public static Task SendUpdateToGroup(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "{group}/updategroup")] object message, //contains chatmessage with latest user, userslist in room and the funny
+        string group,
+        [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
+        {
+            ChatMessage updateMessage = JsonConvert.DeserializeObject<ChatMessage>(message.ToString());
+
+            return signalRMessages.AddAsync(
+                new SignalRMessage
+                {
+                    GroupName = group,
+                    Target = "incomingUser",
+                    Arguments = new[] { updateMessage }
+                });
+        }
+
+        [FunctionName("SendSwipeDataToGroup")]
+        public static Task SendSwipeDataToGroup(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "{group}/start/{selectedData}")] object message, //contains chatmessage with latest user, userslist in room and the funny
+        string group,
+        string selectedData,
+        [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
+        {
+                return signalRMessages.AddAsync(
+                    new SignalRMessage
+                    {
+                        GroupName = group,
+                        Target = "incomingData",
+                        Arguments = new[] { selectedData }
+                    });
+
+        }
+
+        [FunctionName("SendUpdateToHost")]
+        public static Task SendUpdateToHost(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "{group}/updatehost")] object message, //contains username to update
+        string group,
+        [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
+        {
+
+            ChatMessage updateMessage = new ChatMessage
+            {
+                UserName = message.ToString(),
+                Content = "has joined the room " + sentences[rnd.Next(sentences.Length)]
+            };
+
+            return signalRMessages.AddAsync(
+                new SignalRMessage
+                {
+                    GroupName = group,
+                    Target = "incomingUserUpdate",
+                    Arguments = new[] { updateMessage }
+                });
+        }
+
+        [FunctionName("SendAnswersToGroup")]
+        public static Task SendAnswersToGroup(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "{group}/send/answers")] object message,
+        string group,
+        [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
+        {
+            MatchList matchList = new MatchList
+            {
+                User = "User",
+                MatchResults = message.ToString()
+            };
+
+            return signalRMessages.AddAsync(
+                new SignalRMessage
+                {
+                    GroupName = group,
+                    Target = "incomingList",
+                    Arguments = new[] { matchList }
+                });
+        }
+
     }
 }
+
