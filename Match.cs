@@ -35,20 +35,9 @@ namespace MatchFunction
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "{group}/add/{userId}")] HttpRequest req,
         string group,
         string userId,
-        [SignalR(HubName = "chat")] IAsyncCollector<SignalRGroupAction> signalRGroupActions/*,
-        [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages*/)
+        [SignalR(HubName = "chat")] IAsyncCollector<SignalRGroupAction> signalRGroupActions)
         {
-/*            ChatMessage chatMessage = new ChatMessage();
-            chatMessage.Content = "has joined the room " + sentences[rnd.Next(sentences.Length)];
-            chatMessage.UserName = userId;
 
-            signalRMessages.AddAsync(
-                new SignalRMessage
-                {
-                    GroupName = group,
-                    Target = "incomingUser",
-                    Arguments = new[] { chatMessage }
-                });*/
 
             return signalRGroupActions.AddAsync(
                 new SignalRGroupAction
@@ -60,14 +49,14 @@ namespace MatchFunction
         }
 
         [FunctionName("HostGroup")]
-        public static Task HostGroup(
+        public static async Task<Task> HostGroup(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "host/{userId}")] HttpRequest req,
         string userId,
         [SignalR(HubName = "chat")] IAsyncCollector<SignalRGroupAction> signalRGroupActions,
         [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
         {
-            string groupCode = IdGenerator.GetBase36(6);
-            signalRGroupActions.AddAsync( //Simply adds the user to the group, but doesn't return the request yet
+            string groupCode = await IdGenerator.GetBase36(6);
+            await signalRGroupActions.AddAsync( //Simply adds the user to the group, but doesn't return the request yet
                 new SignalRGroupAction
                 {
                     UserId = userId,
@@ -136,6 +125,23 @@ namespace MatchFunction
                     Target = "incomingUser",
                     Arguments = new[] { updateMessage }
                 });
+        }
+
+        [FunctionName("SendSwipeDataToGroup")]
+        public static Task SendSwipeDataToGroup(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "{group}/start/{selectedData}")] object message, //contains chatmessage with latest user, userslist in room and the funny
+        string group,
+        string selectedData,
+        [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
+        {
+                return signalRMessages.AddAsync(
+                    new SignalRMessage
+                    {
+                        GroupName = group,
+                        Target = "incomingData",
+                        Arguments = new[] { selectedData }
+                    });
+
         }
 
         [FunctionName("SendUpdateToHost")]

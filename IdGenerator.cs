@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace MatchFunction
 {
@@ -17,7 +18,7 @@ namespace MatchFunction
         /// </summary>
         /// <param name="length"></param>
         /// <returns></returns>
-        public static string GetBase36(int length)
+        public static async Task<string> GetBase36(int length)
             {
                 var sb = new StringBuilder(length);
 
