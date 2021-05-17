@@ -2,8 +2,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:3.1 AS base
 WORKDIR /app
 EXPOSE 7071
 
-ENV ASPNETCORE_URLS=http://+:7071
-
 FROM mcr.microsoft.com/dotnet/sdk:3.1 AS build
 WORKDIR /src
 COPY ["MatchFunction.csproj", "./"]
