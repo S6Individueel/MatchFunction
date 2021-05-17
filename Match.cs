@@ -17,8 +17,6 @@ namespace MatchFunction
 {
     public class Match 
     {
-
-        private static HttpClient httpClient = new HttpClient();
         private static Random rnd = new Random();
         private static readonly string[] sentences = new string[] { "momentarily", "bloodthirstily", "unnecessarily", "trustworthily", "involuntarily", "secondarily", "mandatorily", "temporarily", "arbitrarily", "voluntarily", "ordinarily", "stealthily", "unsanitarily", "worthily", "unworthily", "sanitarily", "squekily", "hungrily", "cheekily" };
         [FunctionName("Negotiate")]
@@ -72,23 +70,6 @@ namespace MatchFunction
                 Arguments = new[] { groupCode }
             });
         }
-        /*        [FunctionName("addToGroupGrimly")] //Altered from Grimly src=https://github.com/MicrosoftDocs/azure-docs/issues/34409
-                public static async Task<Task> AddToGroupGrimly(
-                [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
-                ClaimsPrincipal claimsPrincipal,
-                [SignalR(HubName = "chat")]
-                        IAsyncCollector<SignalRGroupAction> signalRGroupActions)
-                {
-                    var userIdClaim = claimsPrincipal.FindFirst(ClaimTypes.NameIdentifier);
-                    //string groupName = await req.ReadAsStringAsync();
-                    return signalRGroupActions.AddAsync(
-                        new SignalRGroupAction
-                        {
-                            UserId = userIdClaim.Value,
-                            GroupName = "myGroup",
-                            Action = GroupAction.Add
-                        });
-                }*/
 
         [FunctionName("SendMessageToGroup")]
         public static Task SendMessageToGroup(
