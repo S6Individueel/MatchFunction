@@ -1,21 +1,11 @@
-FROM mcr.microsoft.com/dotnet/aspnet:3.1 AS base
-WORKDIR /app
-EXPOSE 7071
+FROM mcr.microsoft.com/dotnet/sdk:3.1 AS installer-env
 
-ENV ASPNETCORE_URLS=http://+:7071
+COPY . /src/dotnet-function-app
+RUN cd /src/dotnet-function-app && \
+    mkdir -p /home/site/wwwroot && \
+    dotnet publish *.csproj --output /home/site/wwwroot
 
-FROM mcr.microsoft.com/dotnet/sdk:3.1 AS build
-WORKDIR /src
-COPY ["MatchFunction.csproj", "./"]
-RUN dotnet restore "MatchFunction.csproj"
-COPY . .
-WORKDIR "/src/."
-RUN dotnet build "MatchFunction.csproj" -c Release -o /app/build
+FROM mcr.microsoft.com/azure-functions/dotnet:3.0
+ENV AzureWebJobsScriptRoot=/home/site/wwwroot
 
-FROM build AS publish
-RUN dotnet publish "MatchFunction.csproj" -c Release -o /app/publish
-
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "MatchFunction.dll"]
+COPY --from=installer-env ["/home/site/wwwroot", "/home/site/wwwroot"]

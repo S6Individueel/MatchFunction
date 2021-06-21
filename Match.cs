@@ -35,8 +35,6 @@ namespace MatchFunction
         string userId,
         [SignalR(HubName = "chat")] IAsyncCollector<SignalRGroupAction> signalRGroupActions)
         {
-
-
             return signalRGroupActions.AddAsync(
                 new SignalRGroupAction
                 {
@@ -47,14 +45,14 @@ namespace MatchFunction
         }
 
         [FunctionName("HostGroup")]
-        public static async Task<Task> HostGroup(
+        public static Task HostGroup(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "host/{userId}")] HttpRequest req,
         string userId,
         [SignalR(HubName = "chat")] IAsyncCollector<SignalRGroupAction> signalRGroupActions,
         [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
         {
-            string groupCode = await IdGenerator.GetBase36(6);
-            await signalRGroupActions.AddAsync( //Simply adds the user to the group, but doesn't return the request yet
+            string groupCode = IdGenerator.GetBase36(6);
+            signalRGroupActions.AddAsync( //Simply adds the user to the group, but doesn't return the request yet
                 new SignalRGroupAction
                 {
                     UserId = userId,
