@@ -35,8 +35,6 @@ namespace MatchFunction
         string userId,
         [SignalR(HubName = "chat")] IAsyncCollector<SignalRGroupAction> signalRGroupActions)
         {
-
-
             return signalRGroupActions.AddAsync(
                 new SignalRGroupAction
                 {
@@ -47,20 +45,20 @@ namespace MatchFunction
         }
 
         [FunctionName("HostGroup")]
-        public static async Task<Task> HostGroup(
+        public static Task HostGroup(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "host/{userId}")] HttpRequest req,
         string userId,
         [SignalR(HubName = "chat")] IAsyncCollector<SignalRGroupAction> signalRGroupActions,
         [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
         {
-            string groupCode = await IdGenerator.GetBase36(6);
-            await signalRGroupActions.AddAsync( //Simply adds the user to the group, but doesn't return the request yet
+            string groupCode = IdGenerator.GetBase36(6);
+            signalRGroupActions.AddAsync( //Simply adds the user to the group, but doesn't return the request yet
                 new SignalRGroupAction
                 {
                     UserId = userId,
                     GroupName = groupCode,
                     Action = GroupAction.Add
-                }); 
+                });
 
             return signalRMessages.AddAsync( //Return the message with the code and user in order for quick initialization client side, also reduces roundtrip by 1
             new SignalRMessage
@@ -70,6 +68,38 @@ namespace MatchFunction
                 Arguments = new[] { groupCode }
             });
         }
+
+        /*        [FunctionName("HostGroup1")]
+                public static Task HostGroup1(
+                [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "host1/{userId}/{customString}")] HttpRequest req,
+                string userId, string customString,
+                [SignalR(HubName = "chat")] IAsyncCollector<SignalRGroupAction> signalRGroupActions)
+                {
+                    string groupCode = IdGenerator.GetBase36(6);
+                    return signalRGroupActions.AddAsync( //Simply adds the user to the group, but doesn't return the request yet
+                        new SignalRGroupAction
+                        {
+                            UserId = userId,
+                            GroupName = customString,
+                            Action = GroupAction.Add
+                        });
+                }
+
+                [FunctionName("HostGroup2")]
+                public static Task HostGroup2(
+                [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "host2/{userId}/{customString}")] HttpRequest req,
+                string userId, string customString,
+                [SignalR(HubName = "chat")] IAsyncCollector<SignalRMessage> signalRMessages)
+                {
+                    return signalRMessages.AddAsync( //Return the message with the code and user in order for quick initialization client side, also reduces roundtrip by 1
+                    new SignalRMessage
+                    {
+                        GroupName = customString,
+                        Target = "incomingHost",
+                        Arguments = new[] { customString }
+                    });
+                }*/
+
 
         [FunctionName("SendMessageToGroup")]
         public static Task SendMessageToGroup(

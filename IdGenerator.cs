@@ -18,7 +18,7 @@ namespace MatchFunction
         /// </summary>
         /// <param name="length"></param>
         /// <returns></returns>
-        public static async Task<string> GetBase36(int length)
+        public static string GetBase36(int length)
             {
                 var sb = new StringBuilder(length);
 
